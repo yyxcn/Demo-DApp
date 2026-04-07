@@ -1,0 +1,72 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+struct Question {
+  string question;
+  string[] options;
+}
+
+struct Answer {
+  address respondent;
+  uint8[] answers;
+}
+
+contract Survey {
+  // Key-Value Storage
+  // Key range 0x00..0000 ~ 0xFF..FFFF(2^256 - 1)
+  string public title;
+  string public description;
+  uint256 targetNumber;
+  uint256 public rewardAmount;
+  Question[] questions; // 가변 변수이므로 public으로 getter 함수 자동 생성 X
+  Answer[] answers;
+  mapping(address => uint) testMap;
+
+  constructor(
+    string memory _title,
+    string memory _description,
+    uint256 _targetNumber,
+    Question[] memory _questions
+  ) payable {
+    title = _title;
+    description = _description;
+    targetNumber = _targetNumber;
+    rewardAmount = msg.value / _targetNumber;
+    testMap[0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199] = 1000;
+    for (uint i = 0; i < _questions.length; i++) {
+      questions.push(
+        Question({
+          question: _questions[i].question,
+          options: _questions[i].options
+        })
+      );
+      /*
+      Question storage q = questions.push(); // 배열 끝에 빈 Question 하나를 추가하고 q가 그거를 가리킴
+      q.question = _questions[i].question;
+      q.options = _questions[i].options;
+      */
+    }
+  }
+
+  function submitAnswer(Answer calldata _answer) external {
+    // length validation
+    require(
+      _answer.answers.length == questions.length,
+      "Mismatched answers length"
+    );
+    require(answers.length < targetNumber, "This survey has been ended");
+
+    answers.push(
+      Answer({respondent: _answer.respondent, answers: _answer.answers})
+    );
+    payable(msg.sender).transfer(rewardAmount);
+  }
+
+  function getAnswers() external view returns (Answer[] memory) {
+    return answers;
+  }
+
+  function getQuestions() external view returns (Question[] memory) {
+    return questions;
+  }
+}
