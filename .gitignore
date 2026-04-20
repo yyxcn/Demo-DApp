@@ -1,22 +1,20 @@
-# Node modules
-/node_modules
+# Global
+.DS_Store
+.env
+.env.local
 
-# Compilation output
-/dist
+# surveyContracts
+surveyContracts/node_modules/
+surveyContracts/dist/
+surveyContracts/bundle/
+surveyContracts/artifacts/
+surveyContracts/cache/
+surveyContracts/types/
+surveyContracts/coverage/
+surveyContracts/.vscode/
 
-# pnpm deploy output
-/bundle
-
-# Hardhat Build Artifacts
-/artifacts
-
-# Hardhat compilation (v2) support directory
-/cache
-
-# Typechain output
-/types
-
-# Hardhat coverage reports
-/coverage
-
-/.vscode
+# surveyUI
+surveyUI/node_modules/
+surveyUI/.react-router/
+surveyUI/build/
+surveyUI/.vscode/
