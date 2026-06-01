@@ -14,6 +14,9 @@ import { createModal } from "@rabby-wallet/rabbykit";
 import { createConfig, http } from "@wagmi/core";
 import { hardhat } from "@wagmi/core/chains";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider } from "wagmi";
+
 export const config = createConfig({
   chains: [hardhat],
   transports: {
@@ -24,6 +27,8 @@ export const config = createConfig({
 export const rabbykit = createModal({
   wagmi: config,
 });
+
+const queryClient = new QueryClient();
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -43,11 +48,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// tsx/jsx에서 {}: Typescript/Javascript 값을 넣는 문법
+// <div className="flex justify-center items-center py-20 px-20 pb-12 h-screen">
 export default function App() {
   return (
-    <div className="py-20 px-5">
-      <Navigation />
-      <Outlet />
+    <div className="py-20 px-20 h-screen">
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <Navigation />
+          <Outlet />
+        </QueryClientProvider>
+      </WagmiProvider>
     </div>
   );
 }

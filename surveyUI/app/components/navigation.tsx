@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
   NavigationMenu,
@@ -6,13 +7,33 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
 } from "~/components/ui/navigation-menu";
 import { Button } from "./ui/button";
 import { rabbykit } from "~/root";
+import WalletButton from "./wallet-button";
 
 export default function Navigation() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const tabSurfaceClass = isScrolled
+    ? "border bg-white shadow-sm"
+    : "border border-transparent bg-transparent shadow-none";
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   return (
-    <nav className="fixed top-0 right-0 left-0">
+    <nav className="fixed top-0 right-0 left-0 z-50">
       <div className="flex w-screen items-center justify-between py-5 px-5">
         <Link to="/" className="text-lg font-bold ">
           DESTAT
@@ -21,15 +42,22 @@ export default function Navigation() {
           <NavigationMenuList>
             {/* Dashboard */}
             <NavigationMenuItem>
-              <NavigationMenuLink>Dashboard</NavigationMenuLink>
+              <NavigationMenuLink
+                asChild
+                className={`${navigationMenuTriggerStyle()} ${tabSurfaceClass}`}
+              >
+                <Link to="/">Dashboard</Link>
+              </NavigationMenuLink>
             </NavigationMenuItem>
 
             {/* Survey */}
             <NavigationMenuItem>
-              <NavigationMenuTrigger>Survey</NavigationMenuTrigger>
+              <NavigationMenuTrigger className={tabSurfaceClass}>
+                Survey
+              </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-                  <li className="row-span-2">
+                  <li className="row-span-2 h-[150px]">
                     <NavigationMenuLink asChild>
                       <a
                         className="from-muted/50 to-muted flex h-full w-full flex-col justify-center rounded-md bg-linear-to-b no-underline outline-hidden select-none"
@@ -72,10 +100,12 @@ export default function Navigation() {
 
             {/* Archieve */}
             <NavigationMenuItem>
-              <NavigationMenuTrigger>Archieve</NavigationMenuTrigger>
+              <NavigationMenuTrigger className={tabSurfaceClass}>
+                Archieve
+              </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-                  <li className="row-span-2">
+                  <li className="row-span-2 h-[150px]">
                     <NavigationMenuLink asChild>
                       <a
                         className="from-muted/50 to-muted flex h-full w-full flex-col justify-center rounded-md bg-linear-to-b no-underline outline-hidden select-none"
@@ -106,10 +136,12 @@ export default function Navigation() {
 
             {/* Profile */}
             <NavigationMenuItem>
-              <NavigationMenuTrigger>Profile</NavigationMenuTrigger>
+              <NavigationMenuTrigger className={tabSurfaceClass}>
+                Profile
+              </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-                  <li className="row-span-2">
+                  <li className="row-span-2 h-[150px]">
                     <NavigationMenuLink asChild>
                       <a
                         className="from-muted/50 to-muted flex h-full w-full flex-col justify-center rounded-md bg-linear-to-b no-underline outline-hidden select-none"
@@ -151,13 +183,7 @@ export default function Navigation() {
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
-        <Button
-          onClick={() => {
-            rabbykit.open();
-          }}
-        >
-          Connect
-        </Button>
+        <WalletButton />
       </div>
     </nav>
   );

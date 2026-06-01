@@ -16,9 +16,9 @@ contract Survey {
   // Key range 0x00..0000 ~ 0xFF..FFFF(2^256 - 1)
   string public title;
   string public description;
-  uint256 targetNumber;
+  uint256 public targetNumber;
   uint256 public rewardAmount;
-  Question[] questions; // 가변 변수이므로 public으로 getter 함수 자동 생성 X
+  Question[] questions; // 가변 변수이므로, public으로 getter 함수 자동 생성 X
   Answer[] answers;
   mapping(address => uint) testMap;
 
