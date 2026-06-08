@@ -76,7 +76,7 @@ export default function TrendChart({
             />
             <Area
               dataKey="data"
-              type="natural"
+              type="monotone"
               fill="var(--color-desktop)"
               fillOpacity={0.4}
               stroke="var(--color-desktop)"

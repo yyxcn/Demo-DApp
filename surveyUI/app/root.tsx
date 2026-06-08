@@ -18,9 +18,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 
 export const config = createConfig({
-  chains: [kairos],
+  chains: [kairos], // 로컬은 hardhat
   transports: {
-    [kairos.id]: http(),
+    [kairos.id]: http(),  // 로컬은 hardhat
   },
 });
 
