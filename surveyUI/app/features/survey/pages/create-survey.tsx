@@ -9,24 +9,60 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import type { Route } from "./+types/create-survey";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { form } from "viem/chains";
-import { useWriteContract } from "wagmi";
+import {
+  useAccount,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 import { SURVEY_FACTORY, SURVEY_FACTORY_ABI } from "../constant";
-import { parseEther } from "viem";
+import { decodeEventLog, parseEther } from "viem";
+import { supabase } from "~/postgres/supaclient";
+import { description } from "~/features/dashboard/components/trend-chart";
 
 // action은 백엔드 사이드(ex. DB)에서 실행됨 -> 블록체인과 interact하려면 서명을 해야하기 때문에 브라우저 사이드에서 핸들링해야 함
-// export const action = async ({ request }: Route.ActionArgs) => {
-//   const formData = await request.formData();
-//   console.log(formData);
-// };
+// 여기서 이 action은 DB에 insert할 수 있는 권한을 설정해주기 위함
+export const action = async ({ request }: Route.ActionArgs) => {
+  const formData = await request.formData();
+  const metadata = JSON.parse(formData.get("metadata") as string);
+  const imageFile = formData.get("image") as File;
+
+  const { data, error } = await supabase.storage
+    .from("images")
+    .upload(metadata.id, imageFile);
+  if (!error) {
+    const publicUrl = await supabase.storage
+      .from("images")
+      .getPublicUrl(data.path);
+    const { data: survey, error } = await supabase.from("survey").insert({
+      id: metadata.id,
+      title: metadata.title,
+      description: metadata.description,
+      target_number: metadata.targetNumber,
+      reward_amount: metadata.rewardAmount,
+      image: publicUrl.data.publicUrl,
+      questions: metadata.questions,
+      owner: metadata.owner,
+    });
+    console.log(error);
+  }
+};
 
 // [2, 3, 2]
 export default function CreateSurvey() {
   // useState([]): 상태가 변할 때만 다시 렌더링할 수 있음 -> 이때, 상태가 바뀐 것만 찾아서 렌더링함
   const [options, setOptions] = useState([1]); // 여기서 "options = 배열", options를 바꾸고 싶으면 핸들러 "setOptions([])" 사용
   const [image, setImage] = useState("");
-  const { writeContract } = useWriteContract();
+  const [formImage, setFormImage] = useState<File>();
+  // hash: 트랜잭션 해시, writeContract: 스마트컨트랙트를 호출하는 함수
+  const { data: hash, writeContract } = useWriteContract(); // data로 오는 값을 hash라는 이름으로 씀
+  // receipt: 트랜잭션 완료 결과, isFetched: receipt 조회가 끝났는지 여부
+  const { data: receipt, isFetched } = useWaitForTransactionReceipt({
+    hash,
+  });
+  const [surveyMeta, setSurveyMeta] = useState({});
+  const { address } = useAccount();
 
   const uploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -73,6 +109,8 @@ export default function CreateSurvey() {
     const description = formData.get("description") as string;
     const targetNumber = formData.get("target") as string;
     const poolSize = formData.get("pool") as string;
+    const formImg = formData.get("image") as File;
+    setFormImage(formImg);
 
     writeContract({
       address: SURVEY_FACTORY,
@@ -88,7 +126,46 @@ export default function CreateSurvey() {
       ],
       value: parseEther(poolSize),
     });
+
+    setSurveyMeta({
+      title,
+      description,
+      targetNumber,
+      rewardAmount: Number(poolSize) / Number(targetNumber),
+      questions,
+      owner: address,
+    });
   };
+
+  // useEffect() 안에서는 await를 호출할 수 없음 유의
+  useEffect(() => {
+    if (!isFetched || !receipt || !formImage) return;
+    const callAction = async () => {
+      let contractAddress;
+      for (const log of receipt?.logs) {
+        const event = decodeEventLog({
+          abi: SURVEY_FACTORY_ABI,
+          data: log.data,
+          topics: log.topics,
+        });
+        if (event.eventName === "SurveyCreated") {
+          contractAddress = event.args[0];
+        }
+      }
+      const formData = new FormData();
+      const newSurveyMeta = {
+        ...surveyMeta,
+        id: contractAddress,
+      };
+      formData.append("metadata", JSON.stringify(newSurveyMeta));
+      formData.append("image", formImage);
+      await fetch("/survey/create", {
+        method: "post",
+        body: formData,
+      });
+    };
+    callAction();
+  }, [receipt]); // [receipt]: 의존성 배열이므로, 이 값이 바뀔 때마다 useEffect 실행
 
   return (
     <div className="flex justify-center w-full">
@@ -128,6 +205,7 @@ export default function CreateSurvey() {
                     <div className="flex items-center">
                       {j == n - 1 && j != 0 ? (
                         <Button
+                          type="button"
                           onClick={() => deleteOption(i)}
                           className="h-8 w-8 rounded-full mr-1 bg-red-200"
                         >
@@ -143,6 +221,7 @@ export default function CreateSurvey() {
                       />
                       {j == n - 1 && (
                         <Button
+                          type="button"
                           onClick={() => addOption(i)}
                           className="h-8 w-8 rounded-full ml-1 bg-gray-300"
                         >
@@ -156,12 +235,14 @@ export default function CreateSurvey() {
             ))}
             <div className="flex justify-center items-center mb-4">
               <Button
+                type="button"
                 onClick={() => deleteQuestion()}
                 className="h-8 w-8 rounded-full mr-1 bg-red-200"
               >
                 -
               </Button>
               <Button
+                type="button"
                 onClick={() => addQuestion()}
                 className="h-8 w-8 rounded-full mr-1 bg-gray-300"
               >

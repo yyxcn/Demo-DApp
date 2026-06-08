@@ -4,6 +4,9 @@ import { SURVEY_ABI, SURVEY_FACTORY, SURVEY_FACTORY_ABI } from "../constant";
 import { useEffect, useState } from "react";
 import { createPublicClient, getContract, http } from "viem";
 import { hardhat } from "viem/chains";
+import { supabase } from "~/postgres/supaclient";
+import type { Route } from "./+types/all-surveys";
+import { description } from "~/features/dashboard/components/trend-chart";
 
 interface SurveyMeta {
   title: string;
@@ -14,8 +17,28 @@ interface SurveyMeta {
   address: string;
 }
 
-export default function AllSurveys() {
-  const [surveys, setSurveys] = useState<SurveyMeta[]>([]);
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const { data, error } = await supabase
+    .from("all_survey_overview")
+    .select("*");
+  if (!error) {
+    return data.map((s) => {
+      return {
+        title: s.title!,
+        description: s.description!,
+        view: s.view,
+        count: s.count!,
+        image: s.image,
+        address: s.id!,
+      };
+    });
+  } else {
+    return [];
+  }
+};
+
+export default function AllSurveys({ loaderData }: Route.ComponentProps) {
+  const [surveys, setSurveys] = useState<SurveyMeta[]>(loaderData);
   const onChainLoader = async () => {
     // createPublicClient(): 블록체인 읽기용 클라이언트 만들기
     const client = createPublicClient({
@@ -55,33 +78,14 @@ export default function AllSurveys() {
     return surveyMetadata;
   };
 
-  const offChainLoader = async (): Promise<SurveyMeta[]> => {
-    return [
-      {
-        title: "New Survey",
-        description: "Override test",
-        count: 10,
-        view: 1600,
-        image: "https://avatars.githubusercontent.com/u/215622698?s=300&v=4",
-        address: "",
-      },
-    ];
-  };
-
-  useEffect(() => {
-    const onChainData = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      const onchainSurveys = await onChainLoader();
-      setSurveys(onchainSurveys);
-    };
-    onChainData();
-
-    const offChainData = async () => {
-      const onchainSurveys = await offChainLoader();
-      setSurveys(onchainSurveys);
-    };
-    onChainData();
-  }, []); // []: useEffect()를 딱 1번만 실행하되, []안에 파라미터를 넣으면 그 파라미터가 변경될 때마다 호출.
+  // useEffect(() => {
+  //   const onChainData = async () => {
+  //     const onchainSurveys = await onChainLoader();
+  //     await new Promise((resolve) => setTimeout(resolve, 3000));
+  //     setSurveys(onchainSurveys);
+  //   };
+  //   onChainData();
+  // }, []); // []: useEffect()를 딱 1번만 실행하되, []안에 파라미터를 넣으면 그 파라미터가 변경될 때마다 호출.
 
   return (
     <div className="grid grid-cols-4 gap-4">
@@ -95,7 +99,7 @@ export default function AllSurveys() {
           description={survey.description}
           view={1600}
           count={survey.count}
-          image={"https://avatars.githubusercontent.com/u/215622698?s=300&v=4"}
+          image={survey.image!}
           address={survey.address}
         />
       ))}
