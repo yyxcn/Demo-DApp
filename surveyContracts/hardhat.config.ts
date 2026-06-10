@@ -29,11 +29,19 @@ export default defineConfig({
       type: "edr-simulated",
       chainType: "op",
     },
-    sepolia: {
+    // sepolia: {
+    //   type: "http",
+    //   chainType: "l1",
+    //   url: configVariable("SEPOLIA_RPC_URL"),
+    //   accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
+    // },
+    kairos: {
       type: "http",
       chainType: "l1",
-      url: configVariable("SEPOLIA_RPC_URL"),
-      accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
+      url: "https://public-en-kairos.node.kaia.io",
+      accounts: [
+        [configVariable("SEPOLIA_PRIVATE_KEY")],
+      ],
     },
   },
 });
